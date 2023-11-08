@@ -51,88 +51,118 @@ public:
 
      }
 
-     void decoder(const char* intput_name="encoded.txt", const char* output_name="output.txt"){
-     unsigned long long * alfabet = new unsigned long long [256];
-     for(int i=0; i<256; i++){
-         alfabet[i] = 0;
-     }
-
-     FILE* intput_file = fopen(intput_name, "rb");
-     if (intput_file == nullptr) {
-         throw invalid_argument("File not found.");
-     }
-     unsigned char col = 0;
-     unsigned int col_letters = 0;
-     col = fgetc(intput_file);
-     if(!feof(intput_file)){
-         col_letters = (int) col;
-     }
-
-     unsigned char character = 0;
-     for(int i = 0; i< col_letters; i++){
-         character = fgetc(intput_file);
-         if(!feof(intput_file)){
-             unsigned long long col_of;
-             fread(reinterpret_cast<char*>(&alfabet[character]), sizeof(unsigned long long), 1, intput_file);
-            cout<<character<< ':' << alfabet[character]<<endl;
+     void decod(const char* intput_name="encoded.txt", const char* output_name="output.txt") {
+         unsigned long long *alfabet = new unsigned long long[256];
+         for (int i = 0; i < 256; i++) {
+             alfabet[i] = 0;
          }
-     else{
-             throw invalid_argument("Can't decompress file.");
-     }
 
- }
-     priority_queue<Uz, vector<Uz>, Uz> tree;
-     for(int i=0; i<256; i++){
-     if(alfabet[i] != 0){
-         string s(1, (char)i);
+         FILE *intput_file = fopen(intput_name, "rb");
+         if (intput_file == nullptr) {
+             throw invalid_argument("File not found.");
+         }
+         unsigned char col = 0;
+         unsigned int col_letters = 0;
+         col = fgetc(intput_file);
+         if (!feof(intput_file)) {
+             col_letters = (int) col;
+         }
 
-         Uz new_leaf(s, alfabet[i]);
-         tree.push(new_leaf);
-     }
- }
-     character =0;
-     Uz *n = builder(tree);
-
-     FILE* output_file = fopen(output_name, "wb+");
-     Uz *nodes = n;
-     unsigned char letter = 0;
-     while (!feof(intput_file)){
-     character = fgetc((intput_file));
-     if(!feof(intput_file)){
-         for(int i = 7; i > -1; i--){
-             if(((character >> i) & 1) == 1){
-                 if(nodes->R == NULL){
-                     letter = nodes -> key[0];
-                     if(alfabet[letter]>0){
-                         alfabet[letter]--;
-                         fputc(letter, output_file);
-                         nodes = n->R;
-                     }
-                 }
-                 else{
-                     nodes = nodes->R;
-                 }
+         unsigned char character = 0;
+         for (int i = 0; i < col_letters; i++) {
+             character = fgetc(intput_file);
+             if (!feof(intput_file)) {
+                 unsigned long long col_of;
+                 fread(reinterpret_cast<char *>(&alfabet[character]), sizeof(unsigned long long), 1, intput_file);
+                 cout << character << ':' << alfabet[character] << endl;
+             } else {
+                 throw invalid_argument("Can't decompress file.");
              }
-             else if(((character >> 1) & 1) == 0){
-                 if(nodes->L == NULL){
-                     letter = nodes->key[0];
-                     if(alfabet[letter]>0){
-                         fputc(letter, output_file);
-                         nodes = n->L;
-                         alfabet[letter]--;
+
+         }
+         priority_queue<Uz, vector<Uz>, Uz> tree;
+         for (int i = 0; i < 256; i++) {
+             if (alfabet[i] != 0) {
+                 string s(1, (char) i);
+
+                 Uz new_leaf(s, alfabet[i]);
+                 tree.push(new_leaf);
+             }
+         }
+         character = 0;
+         Uz *n = builder(tree);
+
+         FILE *output_file = fopen(output_name, "wb+");
+         Uz *nodes = n;
+         unsigned char letter = 0;
+         while (!feof(intput_file)) {
+             character = fgetc((intput_file));
+             if (!feof(intput_file)) {
+                 for (int i = 7; i > -1; i--) {
+                     if (((character >> i) & 1) == 1) {
+                         if (nodes->R == NULL) {
+                             letter = nodes->key[0];
+                             if (alfabet[letter] > 0) {
+                                 alfabet[letter]--;
+                                 fputc(letter, output_file);
+                                 nodes = n->R;
+                             }
+                         } else {
+                             nodes = nodes->R;
+                         }
+                     } else if (((character >> 1) & 1) == 0) {
+                         if (nodes->L == NULL) {
+                             letter = nodes->key[0];
+                             if (alfabet[letter] > 0) {
+                                 fputc(letter, output_file);
+                                 nodes = n->L;
+                                 alfabet[letter]--;
+                             }
+                         } else {
+                             nodes = nodes->L;
+                         }
                      }
-                 }
-                 else{
-                     nodes = nodes->L;
                  }
              }
          }
-     }
- }
          fclose(intput_file);
          fclose(output_file);
+     }
 
+     void checker(const char* before_name="intput.txt", const char* after_name="output.txt"){
+     unsigned int same = 0;
+     FILE* before_file = fopen(before_name, "rb");
+     FILE* after_file = fopen(after_name, "rb");
 
+     unsigned char after_1 = 0;
+     unsigned char before_1 = 0;
+     while (!feof(after_file) && !feof(before_file)){
+         after_1 = fgetc(after_file);
+         before_1 = fgetc(before_file);
+         if(!feof(after_file) && !feof(before_file)){
+             if(after_1 != before_1){
+                 same++;
+             }
+         }
+     }
+     while (!feof(after_file))
+     {
+         after_1 = fgetc(after_file);
+         if(!feof(after_file)){
+             same++;
+         }
+     }
+     while (!feof(before_file))
+     {
+         before_1 = fgetc(before_file);
+         if(!feof(after_file)){
+             same++;
+         }
+     }
+         fclose(after_file);
+         fclose(before_file);
+         if( same == 0) cout<<"Mister_robot_is_one_love"; else cout<< "drop_out";
+ }
 
      double Coder(const char *input_name = "text.txt", const char *output_name = "codetext.txt"){
          FILE *intput_file = fopen("text.txt", "r");
@@ -260,5 +290,7 @@ public:
 }
  int main(){
      Coder();
+     decod();
+     checker();
  }
 
