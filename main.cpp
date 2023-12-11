@@ -1,8 +1,9 @@
 #include <iostream>
 #include <string>
 #include <cstdlib>
-#include <queue>
-#include <unordered_map>
+#include <list>
+#include <vector>
+#include <map>
 #include <sys/stat.h>
 #include <fstream>
 #include <stdexcept>
@@ -10,56 +11,81 @@
 
 using namespace std;
 
-void choice(){
-
-}
-
 class Uz {
 public:
-    string key;
-    int size;
-    Uz *R;
-    Uz *L;
+    int key;
+	char s;
+	Uz* L, * R;
+	Uz() { L = NULL; R = NULL; }
+    Uz(Uz* second){
+        key = second->key;
+        s = second->s;
+        L = second->L;
+        R = second->R;
+    }
 
-    bool operator()(const Uz &x, const Uz &y) {
-        return x.size >= y.size;
-    }
-    Uz(const string &value = "", char cast = 0, Uz *left = NULL, Uz *right = NULL) {
-      key = value;
-      size = cast;
-      L = left;
-      R = right;
-    }
-    Uz *join(Uz uz) {
-        return new Uz(uz.key + key, uz.size + size, new Uz(uz), this);
-    }
+	Uz(Uz* l, Uz* r)
+	{
+		L = l;
+		R = r;
+		key = l->key + r->key;
+	}
+
+	~Uz()
+	{
+		while (L)
+			delete L;
+		while (R)
+			delete R;
+		L = NULL;
+		R = NULL;
+	}
+
+
 };
 
-Uz *builder(priority_queue<Uz, vector<Uz>, Uz> leafs) {
-    while (leafs.size() > 1) {
-        Uz *n = new Uz(leafs.top());
-        leafs.pop();
-        leafs.push(*n->join(*new Uz(leafs.top())));
-        leafs.pop();
-    }
-    return new Uz(leafs.top());
+struct Sort
+	{
+		bool operator() (const Uz* l, const Uz* r)
+		{
+			return l->key < r->key;
+		}
+	};
+
+Uz *builder(list<Uz*> leafs) {
+    while (leafs.size() != 1)
+	{
+		leafs.sort(Sort());
+		Uz* Left = leafs.front();
+		leafs.pop_front();
+		Uz* Right = leafs.front();
+		leafs.pop_front();
+		Uz* pr = new Uz(Left, Right);
+		leafs.push_back(pr);
+	}
+    return new Uz(leafs.front());
 }
 
-void huffmanCodes(Uz *root, string code, unordered_map<string, string> &huffmanCode) {
-    if (root == nullptr)
-        return;
-    if (!root -> L && !root ->R) {
-        huffmanCode[root ->key] = code;
+void huffmanCodes(Uz *root, vector<bool> &code, map<char, vector<bool> > &huffmanCode) {
+    if(root -> L){
+        code.push_back(0);
+        huffmanCodes(root ->L, code, huffmanCode);
     }
-    huffmanCodes(root ->L, code + "0", huffmanCode);
-    huffmanCodes(root ->R, code + "1", huffmanCode);
+    if(root -> R){
+        code.push_back(1);
+        huffmanCodes(root ->R, code, huffmanCode);
+    }
+
+    if (!root -> L && !root ->R) {
+        huffmanCode[root -> s] = code;
+    }
+
+    if(!code.empty())
+        code.pop_back();
 }
 
 void decod(const char* input_name="codetext.txt", const char* output_name="output.txt") {
-    int *alfabet = new int[256];
-    for (int i = 0; i < 256; i++) {
-        alfabet[i] = 0;
-    }
+    map<char, int> alfabet;
 
     ifstream input_file(input_name, std::ios::binary);
     if (!input_file.is_open()) {
@@ -77,17 +103,15 @@ void decod(const char* input_name="codetext.txt", const char* output_name="outpu
         cout << character << ':' << alfabet[character] << endl;
         col_letters -= 40;
     }
-    priority_queue<Uz, vector<Uz>, Uz> tree;
-    for (int i = 0; i < 256; i++) {
-        if (alfabet[i] != 0) {
-            string s(1, (char) i);
-
-            Uz new_leaf(s, alfabet[i]);
-            tree.push(new_leaf);
-        }
+    list<Uz*> tree;
+    for (auto iterator = alfabet.begin(); iterator != alfabet.end(); iterator++) {
+        Uz* new_leaf = new Uz();
+        new_leaf->key = iterator->second;
+        new_leaf->s = iterator->first;
+        tree.push_back(new_leaf);
     }
     Uz *n = builder(tree);
-    
+
     ofstream output_file(output_name, std::ios::binary);
     Uz *nodes = n;
     char letter = 0;
@@ -101,7 +125,7 @@ void decod(const char* input_name="codetext.txt", const char* output_name="outpu
             }
 
             if(nodes->L == NULL && nodes->R == NULL) {
-                letter = nodes->key[0];
+                letter = nodes->s;
                 output_file << letter;
                 nodes = n;
             }
@@ -149,38 +173,32 @@ void checker(const char* before_name="input.txt", const char* after_name="output
 
 double Coder(const char *input_name = "input.txt", const char *output_name = "codetext.txt"){
     ifstream input_file("input.txt", std::ios::in);
-    int *alfavit = new int[256];
-    for (int i = 0; i < 256; i++){
-        alfavit[i] = 0;
-    }
+    map<char, int> alfavit;
 
-    char simvol;
     while (!input_file.eof()){
-        simvol =input_file.get();
-        cout<<simvol<< endl;
-        if (!input_file.eof()){
-            alfavit[simvol]++;
-
-        }
-
+        char simvol = input_file.get();
+        alfavit[simvol]++;
     }
 
-    priority_queue<Uz, vector<Uz>, Uz> leafs;
-    for (int i = 0; i < 256; i++) {
-        if (alfavit[i] != 0) {
-            string s(1, (char) i);
-            Uz new_leafs(s, alfavit[i]);
-            leafs.push(new_leafs);
-        }
+    list<Uz*> leafs;
+    for (auto iterator = alfavit.begin(); iterator != alfavit.end(); iterator++) {
+        Uz* new_leafs = new Uz();
+        new_leafs->key = iterator->second;
+        new_leafs->s = iterator->first;
+        leafs.push_back(new_leafs);
     }
     Uz *tree = builder(leafs);
 
-    unordered_map<string, string> huffmanCode;
-    huffmanCodes(tree, "", huffmanCode);
+    map<char, vector<bool> > huffmanCode;
+    vector<bool> code;
+    huffmanCodes(tree, code, huffmanCode);
 
     cout << "Huffman Codes are :\n" << '\n';
     for (auto pair: huffmanCode){
-        cout << pair.first << " " << pair.second << '\n';
+        cout << pair.first << " ";
+        for(auto b : pair.second)
+            cout << b;
+        cout << endl;
     }
     ofstream output_file(output_name, std::ios::binary);
 
@@ -188,7 +206,7 @@ double Coder(const char *input_name = "input.txt", const char *output_name = "co
     int len = 0;
     int col_letters = leafs.size() * 40;
     output_file.write((char*) &col_letters, sizeof(col_letters));
-    for (int i = 0; i < 256; i++){
+    for (int i = 0; i < 500; i++){
         if (alfavit[i] > 0){
             char s = char(i);
             output_file.write((char*)&s, sizeof(s));
@@ -198,14 +216,14 @@ double Coder(const char *input_name = "input.txt", const char *output_name = "co
 
     input_file.clear();
     input_file.seekg(0);
-    
+
     int bit_len = 0;
     char letter = 0;
     while (!input_file.eof()){
-        simvol = input_file.get();
-        string s(1, simvol);
-        for (int i = 0; i < huffmanCode[s].length(); i++) {
-            letter = letter | (huffmanCode[s][i]- '0') << (7 - bit_len);
+        char simvol = input_file.get();
+        for (auto i = huffmanCode[simvol].begin(); i != huffmanCode[simvol].end(); i++) {
+            bool b = *i;
+            letter = letter | (b << (7 - bit_len));
             bit_len++;
             if(bit_len == 8){
                 bit_len = 0;
