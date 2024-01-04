@@ -13,10 +13,10 @@ using namespace std;
 
 class Uz {
 public:
-    int key;
-	char s;
-	Uz* L, * R;
-	Uz() { L = NULL; R = NULL; }
+    int key;//���-�� ����������
+	char s;//������
+	Uz* L, * R;//������ �� ������ � ������� ��������
+	Uz() { L = NULL; R = NULL; }//���������� �� ���������
     Uz(Uz* second){
         key = second->key;
         s = second->s;
@@ -24,11 +24,11 @@ public:
         R = second->R;
     }
 
-	Uz(Uz* l, Uz* r)
+	Uz(Uz* l, Uz* r)//����������� � ���������� ���������
 	{
 		L = l;
 		R = r;
-		key = l->key + r->key;
+		key = l->key + r->key;//��� ������� 2-�� ��������, ����������� �� ���-�� ����������
 	}
 
 	~Uz()
@@ -41,10 +41,10 @@ public:
 		R = NULL;
 	}
 
-
+    
 };
 
-struct Sort
+struct Sort//���������� 2 ����, ���� sort=1 �� ����� ������ ������� � ���� 0, �� ��������
 	{
 		bool operator() (const Uz* l, const Uz* r)
 		{
@@ -56,18 +56,18 @@ Uz *builder(list<Uz*> leafs) {
     while (leafs.size() != 1)
 	{
 		leafs.sort(Sort());
-		Uz* Left = leafs.front();
-		leafs.pop_front();
-		Uz* Right = leafs.front();
-		leafs.pop_front();
-		Uz* pr = new Uz(Left, Right);
-		leafs.push_back(pr);
+		Uz* Left = leafs.front(); //����� �������-������ ���� ������
+		leafs.pop_front();//������� ��� �� ������ 
+		Uz* Right = leafs.front();//������ �������-������ ���� ��������� ������ 
+		leafs.pop_front();//������� ��� �� ������
+		Uz* pr = new Uz(Left, Right);//������ ����� ���� � ���������������� ����� � ������ ���������
+		leafs.push_back(pr);//� ����� ������ ��������� ������������ ���� (���-�� ����������=����� ���������� ��������)
 	}
-    return new Uz(leafs.front());
+    return (new Uz(leafs.front()));
 }
 
 void huffmanCodes(Uz *root, vector<bool> &code, map<char, vector<bool> > &huffmanCode) {
-    if(root -> L){
+    if(root -> L != NULL){
         code.push_back(0);
         huffmanCodes(root ->L, code, huffmanCode);
     }
@@ -79,7 +79,7 @@ void huffmanCodes(Uz *root, vector<bool> &code, map<char, vector<bool> > &huffma
     if (!root -> L && !root ->R) {
         huffmanCode[root -> s] = code;
     }
-
+    
     if(!code.empty())
         code.pop_back();
 }
@@ -111,7 +111,7 @@ void decod(const char* input_name="codetext.txt", const char* output_name="outpu
         tree.push_back(new_leaf);
     }
     Uz *n = builder(tree);
-
+    
     ofstream output_file(output_name, std::ios::binary);
     Uz *nodes = n;
     char letter = 0;
@@ -206,8 +206,8 @@ double Coder(const char *input_name = "input.txt", const char *output_name = "co
     int len = 0;
     int col_letters = leafs.size() * 40;
     output_file.write((char*) &col_letters, sizeof(col_letters));
-    for (int i = 0; i < 500; i++){
-        if (alfavit[i] > 0){
+    for (int i = 0; i < 256; i++){
+        if (alfavit[char(i)] > 0){
             char s = char(i);
             output_file.write((char*)&s, sizeof(s));
             output_file.write((char*)(&alfavit[i]), sizeof(alfavit[i]));
@@ -216,7 +216,7 @@ double Coder(const char *input_name = "input.txt", const char *output_name = "co
 
     input_file.clear();
     input_file.seekg(0);
-
+    
     int bit_len = 0;
     char letter = 0;
     while (!input_file.eof()){
